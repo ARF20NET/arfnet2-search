@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="https://arf20.com/style.css">
+        <title>ARFNET</title>
+        <style>
+.box {
+    margin: auto;
+    width: 50%;
+    padding-top: 20vh;
+    min-width: 400px;
+    display: block;
+}
+
+/* Style the form - display items horizontally */
+.form-inline {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+}
+
+/* Add some margins for each label */
+.form-inline label {
+
+}
+
+/* Style the input fields */
+.form-inline input {
+    flex-grow: 1;
+    vertical-align: middle;
+    background-color: #fff;
+    border: 1px solid #ddd;
+}
+
+.form-inline button {
+    border: none;
+}
+
+</style>
+    </head>
+
+    <body>
+        <header><a href="http://arf20.com">
+            <img src="http://arf20.com/arfnet_logo.png" width="64"><span class="title"><strong>ARFNET</strong></span>
+        </a></header>
+        <hr>
+        <main>
+            <h2 class="center">Search</h2>
+            <p>Search all of the ARFNET content fast</p>
+            <div class="box">
+                <form class="form-inline" action="/" method="get">
+                    <input class="input" type="text" name="query">
+                    <button type="submit">Search</button>
+                </form>
+            </div>
+        </main>
+    </body>
+</html>
+

@@ -1,0 +1,9 @@
+# search config
+
+# listen port
+port=8888
+
+# html template path
+template=index.htm.tmpl
+
+
