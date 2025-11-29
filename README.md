@@ -1,4 +1,4 @@
-# arfnet2-status
+# arfnet2-search
 
 ARFNET Fast file index and search
 
