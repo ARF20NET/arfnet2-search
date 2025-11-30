@@ -16,26 +16,36 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+    index.c: Efficient fast file index
+
 */
 
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef _INDEX_H
+#define _INDEX_H
 
-#define BUFF_SIZE           65535
-#define INIT_VEC_CAPACITY   256
-#define INIT_MAP_CAPACITY   1024 /* index directory initial size */
-#define CONFIG_PATH         "search.cfg"
+#include <sys/stat.h>
+#include <stddef.h>
 
-#define DEFAULT_PORT        8888
-#define DEFAULT_TMPL_PATH   "index.htm.tmpl"
+typedef enum {
+    LOOKUP_SUBSTR,
+    LOOKUP_SUBSTR_NOCASE,
+    LOOKUP_REGEX
+} lookup_type_t;
 
-/* config */
-extern unsigned short port;
-extern char *tmpl_path;
-extern char *root;
+typedef struct {
+    char *name;
+    struct stat stat;
+    const char *mime;
+} node_data_t;
 
+typedef struct map_s *index_t;
 
-int config_load(const char *conf_path);
+int index_init();
+void index_deinit();
+index_t index_new(size_t icapacity, const char *root);
+int index_lookup(index_t index, lookup_type_t type, const char *query,
+    const node_data_t **results);
+void index_destroy(index_t index);
 
-#endif /* _CONFIG_H */
+#endif /* _INDEX_H */
 

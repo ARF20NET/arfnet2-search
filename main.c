@@ -35,6 +35,7 @@
 #include <microhttpd.h>
 
 #include "config.h"
+#include "index.h"
 
 static char *index_format_template = NULL;
 
@@ -118,6 +119,14 @@ int main() {
         fprintf(stderr, "error starting libmicrohttpd daemon\n");
         return 1;
     }
+
+    /* begin indexing */
+    if (index_init() < 0)
+        return 1;
+
+    index_t index = index_new(INIT_MAP_CAPACITY, root);
+
+    printf("[index] indexed\n");
 
     while (1) {
         sleep(1000);

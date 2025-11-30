@@ -28,7 +28,7 @@
 #include <errno.h>
 
 unsigned short port = 0;
-char *tmpl_path = NULL;
+char *tmpl_path = NULL, *root = NULL;
 
 int
 config_load(const char *conf_path)
@@ -71,6 +71,10 @@ config_load(const char *conf_path)
             value[strlen(value) - 1] = '\0';
             tmpl_path = strdup(value);
             printf("\ttemplate: %s\n", tmpl_path);
+        } else if (strcmp(line, "root") == 0) {
+            value[strlen(value) - 1] = '\0';
+            root = strdup(value);
+            printf("\troot: %s\n", root);
         } else {
             fprintf(stderr, "[config] unknown key: %s\n", line);
             continue;
@@ -87,6 +91,11 @@ config_load(const char *conf_path)
     if (!tmpl_path) {
         fprintf(stderr, "[config] W: no template file given, using default\n");
         tmpl_path = DEFAULT_TMPL_PATH;
+    }
+
+    if (!root) {
+        fprintf(stderr, "[config] E: no root given\n");
+        return -1;
     }
 
     return 0;

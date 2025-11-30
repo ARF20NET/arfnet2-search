@@ -22,7 +22,7 @@ ARFNET Fast file index and search
 
 ## Building
 
-Depends on libmicrohttpd
+Depends on libmicrohttpd, libmagic
 
 ```
 make
