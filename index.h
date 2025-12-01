@@ -33,7 +33,7 @@ typedef enum {
 } lookup_type_t;
 
 typedef struct {
-    char *name;
+    const char *name, *path;
     struct stat stat;
     const char *mime;
 } node_data_t;
@@ -50,6 +50,7 @@ void index_deinit();
 index_t index_new(size_t icapacity, const char *root, int examine);
 results_t *index_lookup(index_t index, lookup_type_t type, const char *query);
 void index_destroy(index_t index);
+void results_destroy(results_t *results);
 
 #endif /* _INDEX_H */
 

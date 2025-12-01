@@ -41,6 +41,27 @@ static char *index_format_template = NULL;
 
 static index_t g_index = NULL;
 
+static const char *result_html_template = 
+    "<div class=\"result\"><p class=\"name\">%s</p><a class=\"path\">%s</a></div>\n";
+
+
+static const char *
+generate_results_html(results_t *results)
+{
+    static char buff[65535];
+
+    char *pos = buff;
+  
+    for (int i = 0; i < results->size; i++) {
+        pos += snprintf(pos, 65535 - (pos - buff),
+            result_html_template,
+            results->results[i]->name,
+            results->results[i]->path
+        );
+    }
+
+    return buff;
+}
 
 enum MHD_Result answer_to_connection(
     void *cls, struct MHD_Connection *connection,
@@ -69,8 +90,7 @@ enum MHD_Result answer_to_connection(
     int ret;
 
     if (strcmp(method, "GET") == 0 && strcmp(url, "/") == 0) {
-        snprintf(buff, BUFF_SIZE,
-            index_format_template);
+        snprintf(buff, BUFF_SIZE, index_format_template, "", "");
 
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
             MHD_RESPMEM_PERSISTENT);
@@ -80,19 +100,18 @@ enum MHD_Result answer_to_connection(
         MHD_destroy_response(response);
     }
     else if (strcmp(method, "GET") == 0 && strcmp(url, "/query") == 0) {
-        snprintf(buff, BUFF_SIZE,
-            index_format_template);
-
         const char *query = MHD_lookup_connection_value(connection,
             MHD_GET_ARGUMENT_KIND, "query");
 
         results_t *results = index_lookup(g_index, LOOKUP_SUBSTR, query);
-        printf("results\n");
-        for (size_t i = 0; i < results->size; i++)
-            printf("\t%s\n", results->results[i]->name);
+
+        snprintf(buff, BUFF_SIZE, index_format_template, query,
+            generate_results_html(results));
 
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
             MHD_RESPMEM_PERSISTENT);
+
+        results_destroy(results);
 
         printf("%d\n", 200);
         ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
@@ -123,7 +142,7 @@ int main() {
     fseek(tf, 0, SEEK_END);
     size_t tfs = ftell(tf);
     rewind(tf);
-    index_format_template = malloc(tfs);
+    index_format_template = malloc(tfs + 1);
     fread(index_format_template, 1, tfs, tf);
     fclose(tf);
     index_format_template[tfs] = '\0';

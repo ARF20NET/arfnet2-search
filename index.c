@@ -115,6 +115,13 @@ results_insert(results_t *results, const node_data_t *result)
     results->results[results->size++] = result;
 }
 
+void
+results_destroy(results_t *results)
+{
+    free(results->results);
+    free(results);
+}
+
 int
 index_init()
 {
@@ -138,7 +145,7 @@ index_deinit()
 }
 
 map_t *
-index_new(size_t icapacity, const char *dir, int examine)
+index_recurse(size_t size, const char *dir, int examine, size_t rootlen)
 {
     DIR *dirp = opendir(dir);
     if (!dirp) {
@@ -147,7 +154,7 @@ index_new(size_t icapacity, const char *dir, int examine)
         return NULL;
     }
 
-    map_t *map = map_new(icapacity);
+    map_t *map = map_new(size);
 
     char path[4096];
     struct dirent *de = NULL;
@@ -165,6 +172,7 @@ index_new(size_t icapacity, const char *dir, int examine)
         /* stat it */
         node_data_t *data = malloc(sizeof(node_data_t));
         data->name = strdup(de->d_name);
+        data->path = strdup(&path[rootlen]);
         if (stat(path, &data->stat) < 0) {
             fprintf(stderr, "[index] error stat() %s: %s\n", path,
                 strerror(errno));
@@ -183,13 +191,18 @@ index_new(size_t icapacity, const char *dir, int examine)
         /* recurse */
         map_t *child = NULL;
         if (de->d_type == DT_DIR) {
-            index_new(icapacity, path, examine);
+            child = index_recurse(size, path, examine, rootlen);
         }
 
         map_insert(map, de->d_name, data, child);
     }
 
     return map;
+}
+
+map_t *
+index_new(size_t size, const char *dir, int examine) {
+    return index_recurse(size, dir, examine, strlen(dir) + 1);
 }
 
 void
@@ -200,7 +213,7 @@ index_lookup_substr(map_t *index, const char *query,
         if (!index->map[i].data)
             continue;
 
-        for (struct node_s *node = &index->map[i]; node->next; node = node->next) {
+        for (struct node_s *node = &index->map[i]; node; node = node->next) {
             if (strstr(node->data->name, query))
                 results_insert(results, node->data);
             if (node->child)

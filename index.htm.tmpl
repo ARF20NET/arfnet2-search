@@ -13,19 +13,16 @@
     display: block;
 }
 
-/* Style the form - display items horizontally */
 .form-inline {
     display: flex;
     flex-flow: row wrap;
     align-items: center;
 }
 
-/* Add some margins for each label */
 .form-inline label {
 
 }
 
-/* Style the input fields */
 .form-inline input {
     flex-grow: 1;
     vertical-align: middle;
@@ -37,6 +34,20 @@
     border: none;
 }
 
+.result {
+    margin-left: 1em;
+    margin-bottom: 1em;
+}
+
+.name {
+    font-weight: bold;
+    font-size: 16pt;
+    margin: 0;
+}
+
+.path {
+    
+}
 </style>
     </head>
 
@@ -50,10 +61,11 @@
             <p>Search all of the ARFNET content fast</p>
             <div class="box">
                 <form class="form-inline" action="/query" method="get">
-                    <input class="input" type="text" name="query">
+                    <input class="input" type="text" name="query" value="%s">
                     <button type="submit">Search</button>
                 </form>
             </div>
+            %s
         </main>
     </body>
 </html>
