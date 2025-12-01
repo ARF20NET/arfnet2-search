@@ -183,7 +183,7 @@ index_new(size_t icapacity, const char *dir, int examine)
         /* recurse */
         map_t *child = NULL;
         if (de->d_type == DT_DIR) {
-            index_new(icapacity, path);
+            index_new(icapacity, path, examine);
         }
 
         map_insert(map, de->d_name, data, child);
@@ -192,7 +192,7 @@ index_new(size_t icapacity, const char *dir, int examine)
     return map;
 }
 
-int
+void
 index_lookup_substr(map_t *index, const char *query,
     results_t *results)
 {
@@ -200,10 +200,27 @@ index_lookup_substr(map_t *index, const char *query,
         if (!index->map[i].data)
             continue;
 
-        for (struct node_s *node = &index->map[i]; node->next; node = node->next)
-            if (strstr(node->data.name, query))
-                results_insert(results, )
+        for (struct node_s *node = &index->map[i]; node->next; node = node->next) {
+            if (strstr(node->data->name, query))
+                results_insert(results, node->data);
+            if (node->child)
+                index_lookup_substr(node->child, query, results);
+        }
     }
+}
+
+void
+index_lookup_substr_nocase(map_t *index, const char *query,
+    results_t *results)
+{
+
+}
+
+void
+index_lookup_regex(map_t *index, const char *query,
+    results_t *results)
+{
+
 }
 
 results_t *
@@ -213,10 +230,18 @@ index_lookup(map_t *index, lookup_type_t type, const char *query)
 
     switch (type) {
     case LOOKUP_SUBSTR:
-        return index_lookup_substr(index, query, results);
+        index_lookup_substr(index, query, results);
+    break;
+    case LOOKUP_SUBSTR_NOCASE:
+        index_lookup_substr_nocase(index, query, results);
+    break;
+    case LOOKUP_REGEX:
+        index_lookup_regex(index, query, results);
     break;
 
     }
+
+    return results;
 }
 
 void

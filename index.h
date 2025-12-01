@@ -47,8 +47,8 @@ typedef struct {
 
 int index_init();
 void index_deinit();
-index_t index_new(size_t icapacity, const char *root);
-results_t index_lookup(index_t index, lookup_type_t type, const char *query);
+index_t index_new(size_t icapacity, const char *root, int examine);
+results_t *index_lookup(index_t index, lookup_type_t type, const char *query);
 void index_destroy(index_t index);
 
 #endif /* _INDEX_H */

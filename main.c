@@ -39,6 +39,8 @@
 
 static char *index_format_template = NULL;
 
+static index_t g_index = NULL;
+
 
 enum MHD_Result answer_to_connection(
     void *cls, struct MHD_Connection *connection,
@@ -69,6 +71,25 @@ enum MHD_Result answer_to_connection(
     if (strcmp(method, "GET") == 0 && strcmp(url, "/") == 0) {
         snprintf(buff, BUFF_SIZE,
             index_format_template);
+
+        response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
+            MHD_RESPMEM_PERSISTENT);
+
+        printf("%d\n", 200);
+        ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+        MHD_destroy_response(response);
+    }
+    else if (strcmp(method, "GET") == 0 && strcmp(url, "/query") == 0) {
+        snprintf(buff, BUFF_SIZE,
+            index_format_template);
+
+        const char *query = MHD_lookup_connection_value(connection,
+            MHD_GET_ARGUMENT_KIND, "query");
+
+        results_t *results = index_lookup(g_index, LOOKUP_SUBSTR, query);
+        printf("results\n");
+        for (size_t i = 0; i < results->size; i++)
+            printf("\t%s\n", results->results[i]->name);
 
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
             MHD_RESPMEM_PERSISTENT);
@@ -124,9 +145,20 @@ int main() {
     if (index_init() < 0)
         return 1;
 
-    index_t index = index_new(INIT_MAP_CAPACITY, root);
+    time_t time_now = time(NULL);
+    struct tm *tm_now = gmtime(&time_now);
+    static char timestr[256];
+    strftime(timestr, 256, "%Y-%m-%d %H:%M:%S", tm_now);
 
-    printf("[index] indexed\n");
+    printf("[%s] [index] indexeding started...\n", timestr);
+
+    g_index = index_new(INIT_MAP_CAPACITY, root, 0);
+
+    time_now = time(NULL);
+    tm_now = gmtime(&time_now);
+    strftime(timestr, 256, "%Y-%m-%d %H:%M:%S", tm_now);
+
+    printf("[%s] [index] indexed finished\n", timestr);
 
     while (1) {
         sleep(1000);
