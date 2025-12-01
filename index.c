@@ -31,10 +31,12 @@
 
 #include <magic.h>
 
+#include "config.h"
 
+/* closed addressing map */
 typedef struct map_s {
     struct node_s *map;
-    size_t size, capacity;
+    size_t count, size;
 } map_t;
 
 struct node_s {
@@ -59,21 +61,21 @@ hash(const char *s, int mod)
 }
 
 map_t *
-map_new(size_t icapacity)
+map_new(size_t size)
 {
     map_t *map = malloc(sizeof(map_t));
 
-    map->map = malloc(sizeof(struct node_s) * icapacity);
-    memset(map->map, 0, sizeof(struct node_s) * icapacity);
-    map->capacity = icapacity;
-    map->size = 0;
+    map->map = malloc(sizeof(struct node_s) * size);
+    memset(map->map, 0, sizeof(struct node_s) * size);
+    map->size = size;
+    map->count = 0;
     return map;
 }
 
 void
 map_insert(map_t *map, const char *key, node_data_t *data, map_t *child)
 {
-    struct node_s *node = &map->map[hash(key, map->capacity)];
+    struct node_s *node = &map->map[hash(key, map->size)];
   
     if (node->data) {
         for (; node->next; node = node->next);
@@ -86,6 +88,31 @@ map_insert(map_t *map, const char *key, node_data_t *data, map_t *child)
         node->data = data;
         node->child = child;
     }
+
+    map->count++;
+}
+
+results_t *
+results_new()
+{
+    results_t *r = malloc(sizeof(results_t));
+    r->capacity = INIT_VEC_CAPACITY;
+    r->results = malloc(sizeof(node_data_t*) * r->capacity);
+    memset(r->results, 0, sizeof(node_data_t*) * r->capacity);
+    r->size = 0;
+    return r;
+}
+
+void
+results_insert(results_t *results, const node_data_t *result)
+{
+    if (results->size + 1 >= results->capacity) {
+        results->capacity *= 2;
+        results->results = realloc(results->results, sizeof(node_data_t*) *
+            results->capacity);
+    }
+
+    results->results[results->size++] = result;
 }
 
 int
@@ -166,10 +193,30 @@ index_new(size_t icapacity, const char *dir, int examine)
 }
 
 int
-index_lookup(index_t index, lookup_type_t type, const char *query,
-    const node_data_t **results)
+index_lookup_substr(map_t *index, const char *query,
+    results_t *results)
 {
+    for (size_t i = 0; i < index->size; i++) {
+        if (!index->map[i].data)
+            continue;
 
+        for (struct node_s *node = &index->map[i]; node->next; node = node->next)
+            if (strstr(node->data.name, query))
+                results_insert(results, )
+    }
+}
+
+results_t *
+index_lookup(map_t *index, lookup_type_t type, const char *query)
+{
+    results_t *results = results_new();
+
+    switch (type) {
+    case LOOKUP_SUBSTR:
+        return index_lookup_substr(index, query, results);
+    break;
+
+    }
 }
 
 void

@@ -40,11 +40,15 @@ typedef struct {
 
 typedef struct map_s *index_t;
 
+typedef struct {
+    const node_data_t **results;
+    size_t size, capacity;
+} results_t;
+
 int index_init();
 void index_deinit();
 index_t index_new(size_t icapacity, const char *root);
-int index_lookup(index_t index, lookup_type_t type, const char *query,
-    const node_data_t **results);
+results_t index_lookup(index_t index, lookup_type_t type, const char *query);
 void index_destroy(index_t index);
 
 #endif /* _INDEX_H */
