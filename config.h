@@ -31,8 +31,7 @@
 
 /* config */
 extern unsigned short port;
-extern char *tmpl_path;
-extern char *root;
+extern char *tmpl_path, *root, *subdir;
 
 
 int config_load(const char *conf_path);

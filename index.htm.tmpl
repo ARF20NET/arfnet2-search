@@ -5,10 +5,12 @@
         <link rel="stylesheet" type="text/css" href="https://arf20.com/style.css">
         <title>ARFNET</title>
         <style>
+.searchform {
+    margin-bottom: 2em;
+}
+
 .box {
-    margin: auto;
     width: 50%;
-    padding-top: 20vh;
     min-width: 400px;
     display: block;
 }
@@ -34,6 +36,23 @@
     border: none;
 }
 
+.label {
+    display: inline-block;
+    width: 200px;
+}
+
+.collapse-title {
+    font-weight: bold;
+}
+
+.sort-left {
+    display: inline-block;
+}
+
+.sort-right {
+    display: inline-block;
+}
+
 .result {
     margin-left: 1em;
     margin-bottom: 1em;
@@ -45,8 +64,25 @@
     margin: 0;
 }
 
+.mime {
+    font-size: 10pt;
+    margin-left: 10pt;
+}
+
 .path {
     
+}
+
+.attrib {
+    float: right;
+}
+
+.size {
+
+}
+
+.time {
+    margin-left: 2em;
 }
 </style>
     </head>
@@ -59,12 +95,54 @@
         <main>
             <h2 class="center">Search</h2>
             <p>Search all of the ARFNET content fast</p>
-            <div class="box">
-                <form class="form-inline" action="/query" method="get">
+            <form class="searchform" action="/query" method="get">
+                <div class="box form-inline">
                     <input class="input" type="text" name="query" value="%s">
-                    <button type="submit">Search</button>
-                </form>
-            </div>
+                    <button type="submit">Search</button><br>
+                </div>
+                <div>
+                    <details>
+                        <summary class="collapse-title">Advanced</summary>
+                        <input type="radio" id="substr" name="type" value="substr">
+                        <label for="substr">substring</label>
+                        <input type="radio" id="substr_nocase" name="type" value="substr_nocase">
+                        <label for="substr_nocase">case insensitive substring</label>
+                        <input type="radio" id="exact" name="type" value="exact">
+                        <label for="exact">exact</label>
+                        <input type="radio" id="regex" name="type" value="regex">
+                        <label for="regex">regex</label>
+                    </details>
+                    <details>
+                        <summary class="collapse-title">Filtering</summary>
+                            <label class="label" for="mtime_start">Timeframe start</label>
+                            <input type="date" id="mtime_start" name="filter_mtime_start"><br>
+                            <label class="label" for="mtime_end">Timeframe end</label>
+                            <input type="date" id="mtime_end" name="filter_mtime_end"><br>
+                            <label class="label" for="size_start">Size lower bound</label>
+                            <input type="text" id="size_start" name="filter_size_start"><br>
+                            <label class="label" for="size_end">Size upper bound</label>
+                            <input type="text" id="size_end" name="filter_size_end"><br>
+                    </details>
+                    <details>
+                        <summary class="collapse-title">Sorting</summary>
+                        <div class="sort-left">
+                            <input type="radio" name="sort" id="name" value="name">
+                            <label for="name">name</label><br>
+                            <input type="radio" name="sort" id="time" value="time">
+                            <label for="time">time</label><br>
+                            <input type="radio" name="sort" id="size" value="size">
+                            <label for="size">size</label><br>
+                        </div>
+                        <div class="sort-right">
+                            <input type="radio" name="sort_dir" id="asc" value="asc">
+                            <label for="asc">ascending</label><br>
+                            <input type="radio" name="sort_dir" id="desc" value="desc">
+                            <label for="desc">descending</label><br>
+                        </div>
+                    </details>
+                </div>
+            </form>
+            <hr>
             %s
         </main>
     </body>

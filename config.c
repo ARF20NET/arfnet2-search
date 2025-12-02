@@ -28,7 +28,7 @@
 #include <errno.h>
 
 unsigned short port = 0;
-char *tmpl_path = NULL, *root = NULL;
+char *tmpl_path = NULL, *root = NULL, *subdir = NULL;
 
 int
 config_load(const char *conf_path)
@@ -38,10 +38,6 @@ config_load(const char *conf_path)
         fprintf(stderr, "Error opening config: %s\n", strerror(errno));
         return -1;
     }
-
-    //fseek(cfgf , 0, SEEK_END);
-    //size_t cfgsize = ftell(cfgf);
-    //rewind(cfgf);
 
     printf("config:\n");
     
@@ -75,6 +71,10 @@ config_load(const char *conf_path)
             value[strlen(value) - 1] = '\0';
             root = strdup(value);
             printf("\troot: %s\n", root);
+        } else if (strcmp(line, "subdir") == 0) {
+            value[strlen(value) - 1] = '\0';
+            subdir = strdup(value);
+            printf("\tsubdir: %s\n", subdir);
         } else {
             fprintf(stderr, "[config] unknown key: %s\n", line);
             continue;

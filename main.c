@@ -42,21 +42,48 @@ static char *index_format_template = NULL;
 static index_t g_index = NULL;
 
 static const char *result_html_template = 
-    "<div class=\"result\"><p class=\"name\">%s</p><a class=\"path\">%s</a></div>\n";
+    "<div class=\"result\">\n"
+        "<span class=\"name\">%s</span>""<super class=\"mime\">%s</super><br>\n"
+        "<a class=\"path\" href=\"%s\">%s</a><div class=\"attrib\"><span class=\"size\">%s</span><span class=\"time\">%s</span></div><br>\n"
+    "</div>\n";
 
+static const char *
+sizestr(size_t size)
+{
+    static char buf[32];
+    if (size < 1024)
+        snprintf(buf, 32, "%ld B", size);
+    else if (size < 1024LL * 1024LL)
+        snprintf(buf, 32, "%.2f KiB", (float)size/1024.f);
+    else if (size < 1024LL * 1024LL * 1024LL)
+        snprintf(buf, 32, "%.2f MiB", (float)size/(1024.f*1024.f));
+    else if (size < 1024LL * 1024LL * 1024LL * 1024LL)
+        snprintf(buf, 32, "%.2f GiB", (float)size/(1024.f*1024.f*1024.f));
+    else if (size < 1024LL * 1024LL * 1024LL * 1024LL * 1024LL)
+        snprintf(buf, 32, "%.2f TiB", (float)size/(1024.f*1024.f*1024.f*1024.f));
+    return buf;
+}
 
 static const char *
 generate_results_html(results_t *results)
 {
-    static char buff[65535];
+    static char buff[65535], timebuf[256], urlbuf[4096];
 
     char *pos = buff;
   
     for (int i = 0; i < results->size; i++) {
+        const node_data_t *data = results->results[i];
+        struct tm *tm_mtim = gmtime(&data->stat.st_mtim.tv_sec);
+        strftime(timebuf, 256, "%Y-%m-%d %H:%M:%S", tm_mtim);
+
+        snprintf(urlbuf, 4096, "%s%s", subdir, data->path);
+
         pos += snprintf(pos, 65535 - (pos - buff),
             result_html_template,
-            results->results[i]->name,
-            results->results[i]->path
+            data->name,
+            data->mime ? data->mime : "",
+            urlbuf, data->path,
+            sizestr(data->stat.st_size), timebuf
         );
     }
 
@@ -103,15 +130,22 @@ enum MHD_Result answer_to_connection(
         const char *query = MHD_lookup_connection_value(connection,
             MHD_GET_ARGUMENT_KIND, "query");
 
-        results_t *results = index_lookup(g_index, LOOKUP_SUBSTR, query);
+        results_t *results = NULL;
+        if (g_index)
+            results = index_lookup(g_index, LOOKUP_SUBSTR, query);
 
-        snprintf(buff, BUFF_SIZE, index_format_template, query,
-            generate_results_html(results));
+        if (results)
+            snprintf(buff, BUFF_SIZE, index_format_template, query,
+                generate_results_html(results));
+        else
+            snprintf(buff, BUFF_SIZE, index_format_template, query,
+                "indexing in progress... try again later");
 
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
             MHD_RESPMEM_PERSISTENT);
 
-        results_destroy(results);
+        if (results)
+            results_destroy(results);
 
         printf("%d\n", 200);
         ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
@@ -171,7 +205,7 @@ int main() {
 
     printf("[%s] [index] indexeding started...\n", timestr);
 
-    g_index = index_new(INIT_MAP_CAPACITY, root, 0);
+    g_index = index_new(INIT_MAP_CAPACITY, root, 1);
 
     time_now = time(NULL);
     tm_now = gmtime(&time_now);

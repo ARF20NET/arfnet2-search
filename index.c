@@ -171,6 +171,7 @@ index_recurse(size_t size, const char *dir, int examine, size_t rootlen)
 
         /* stat it */
         node_data_t *data = malloc(sizeof(node_data_t));
+        memset(data, 0, sizeof(node_data_t));
         data->name = strdup(de->d_name);
         data->path = strdup(&path[rootlen]);
         if (stat(path, &data->stat) < 0) {
@@ -182,11 +183,13 @@ index_recurse(size_t size, const char *dir, int examine, size_t rootlen)
 
         /* examine */
         if (examine) {
-            data->mime = magic_file(magic_cookie, path);
-            if (!data->mime)
+            const char *mime = magic_file(magic_cookie, path);
+            if (!mime) {
                 fprintf(stderr, "[index] error magic_file() %s: %s\n", path,
                     magic_error(magic_cookie));
-        }
+            } else 
+                data->mime = strdup(mime);
+        } 
 
         /* recurse */
         map_t *child = NULL;
