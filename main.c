@@ -46,10 +46,10 @@ static index_t g_index = NULL;
 static const char *result_html_header = 
     "<p>%ld results in %f seconds</p>\n"
     "<div class=\"result-header\">\n"
-        "<a class=\"name\" href=\"%s\">Name %s</a><a class=\"mime\" href=\"%s\">mime-type %s</a><br>\n"
-        "<a class=\"path\" href=\"%s\">path %s</a><div class=\"attrib\">"
-            "<a class=\"size\" href=\"%s\">Size %s</a>"
-            "<a class=\"time\" href=\"%s\">Time %s</a></div><br>\n"
+        "<a class=\"sort-name %s\" href=\"%s\">Name %s</a><a class=\"mime %s\" href=\"%s\">mime-type %s</a><br>\n"
+        "<a class=\"path %s\" href=\"%s\">path %s</a><div class=\"attrib\">"
+            "<a class=\"size %s\" href=\"%s\">Size %s</a>"
+            "<a class=\"time %s\" href=\"%s\">Time %s</a></div><br>\n"
     "</div>\n";
 
 static const char *result_html_template = 
@@ -71,24 +71,29 @@ generate_results_header_html(struct MHD_Connection *connection, const char *base
 
     const char *arrows[] = { "&#8593;", "&#8595;" };
 
-    char name_order = (sort_type == SORT_NAME) && sort_order ? 'a' : 'd';
-    char mime_order = (sort_type == SORT_MIME) && sort_order ? 'a' : 'd';
-    char path_order = (sort_type == SORT_PATH) && sort_order ? 'a' : 'd';
-    char size_order = (sort_type == SORT_SIZE) && sort_order ? 'a' : 'd';
-    char time_order = (sort_type == SORT_TIME) && sort_order ? 'a' : 'd';
+    int name_order = (sort_type == SORT_NAME) && sort_order;
+    int mime_order = (sort_type == SORT_MIME) && sort_order;
+    int path_order = (sort_type == SORT_PATH) && sort_order;
+    int size_order = (sort_type == SORT_SIZE) && sort_order;
+    int time_order = (sort_type == SORT_TIME) && sort_order;
 
-    snprintf(name_url, 256, "%s&s=n&o=%c", baseurl, name_order);
-    snprintf(mime_url, 256, "%s&s=m&o=%c", baseurl, mime_order);
-    snprintf(path_url, 256, "%s&s=p&o=%c", baseurl, path_order);
-    snprintf(size_url, 256, "%s&s=s&o=%c", baseurl, size_order);
-    snprintf(time_url, 256, "%s&s=t&o=%c", baseurl, time_order);
+    snprintf(name_url, 256, "%s&s=n&o=%c", baseurl, name_order ? 'a' : 'd');
+    snprintf(mime_url, 256, "%s&s=m&o=%c", baseurl, mime_order ? 'a' : 'd');
+    snprintf(path_url, 256, "%s&s=p&o=%c", baseurl, path_order ? 'a' : 'd');
+    snprintf(size_url, 256, "%s&s=s&o=%c", baseurl, size_order ? 'a' : 'd');
+    snprintf(time_url, 256, "%s&s=t&o=%c", baseurl, time_order ? 'a' : 'd');
 
     snprintf(buff, 65535, result_html_header, nresults, lookup_time,
-        name_url, arrows[!name_order],
-        mime_url, arrows[!mime_order],
-        path_url, arrows[!path_order],
-        size_url, arrows[!size_order],
-        time_url, arrows[!time_order]
+        sort_type == SORT_NAME ? "sort-active" : "", name_url,
+            arrows[!name_order],
+        sort_type == SORT_MIME ? "sort-active" : "", mime_url,
+            arrows[!mime_order],
+        sort_type == SORT_PATH ? "sort-active" : "", path_url,
+            arrows[!path_order],
+        sort_type == SORT_SIZE ? "sort-active" : "", size_url,
+            arrows[!size_order],
+        sort_type == SORT_TIME ? "sort-active" : "", time_url,
+            arrows[!time_order]
     );
 
     return buff;
@@ -163,7 +168,8 @@ enum MHD_Result answer_to_connection(
     int ret;
 
     if (strcmp(method, "GET") == 0 && strcmp(url, "/") == 0) {
-        snprintf(buff, BUFF_SIZE, index_format_template, "", "", "");
+        snprintf(buff, BUFF_SIZE, index_format_template, "", "", "", "", "", "",
+            "");
 
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
             MHD_RESPMEM_PERSISTENT);
@@ -283,8 +289,8 @@ enum MHD_Result answer_to_connection(
                     sort_order, results->size, lookup_time),
                 generate_results_html(results));
         else
-            snprintf(buff, BUFF_SIZE, index_format_template, query ? query : "",
-                "", "indexing in progress... try again later");
+            snprintf(buff, BUFF_SIZE, index_format_template, "", "",
+                "", "", "", "", "indexing in progress... try again later");
 
         /* send it */
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
