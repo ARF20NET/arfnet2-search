@@ -1,7 +1,7 @@
 /*
 
     arfnet2-search: Fast file indexer and search
-    Copyright (C) 2023 arf20 (Ángel Ruiz Fernandez)
+    Copyright (C) 2025 arf20 (Ángel Ruiz Fernandez)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 
 */
 
+#define _GNU_SOURCE
 #include "index.h"
 
 #include <sys/types.h>
@@ -113,6 +114,67 @@ results_insert(results_t *results, const node_data_t *result)
     }
 
     results->results[results->size++] = result;
+}
+
+static int
+cmp_results(const void *_r1, const void *_r2, void *arg)
+{
+    const node_data_t *r1 = *(node_data_t**)_r1, *r2 = *(node_data_t**)_r2;
+    sort_type_t sort_type = ((int*)arg)[0];
+    int desc = ((int*)arg)[1];
+
+    int cmp = 0;
+
+    switch (sort_type) {
+    case SORT_NAME:
+        cmp = strcmp(r1->name, r2->name);
+    break;
+    case SORT_PATH:
+        cmp = strcmp(r1->path, r2->path);
+    break;
+    case SORT_MIME:
+        if (!r1->mime)
+            return 0;
+        cmp = strcmp(r1->mime, r2->mime);
+    break;
+    case SORT_SIZE:
+        cmp = r1->stat.st_size - r2->stat.st_size;
+    break;
+    case SORT_TIME:
+        cmp = r1->stat.st_mtime - r2->stat.st_mtime;
+    break;
+    }
+    
+    return !desc ? cmp : -cmp;
+}
+
+void
+results_sort(results_t *results, sort_type_t sort_type, int desc)
+{
+    int arg[2] = { sort_type, desc };
+    qsort_r(results->results, results->size, sizeof(node_data_t*), cmp_results,
+        &arg);
+}
+
+results_t *
+results_filter(results_t *results, const filter_t *filter)
+{
+    results_t *filtered = results_new();
+    for (size_t i = 0; i < results->size; i++) {
+        const node_data_t *n = results->results[i];
+        if (filter->time_low && (n->stat.st_mtime < filter->time_low))
+            continue;
+        if (filter->time_high && (n->stat.st_mtime > filter->time_high))
+            continue;
+        if (filter->size_low && (n->stat.st_size < filter->size_low))
+            continue;
+        if (filter->size_high && (n->stat.st_size > filter->size_high))
+            continue;
+
+        results_insert(filtered, n);
+    }
+    results_destroy(results);
+    return filtered;
 }
 
 void
@@ -226,8 +288,14 @@ index_lookup_substr(map_t *index, const char *query,
 }
 
 void
-index_lookup_substr_nocase(map_t *index, const char *query,
+index_lookup_substr_caseinsensitive(map_t *index, const char *query,
     results_t *results)
+{
+
+}
+
+void
+index_lookup_exact(map_t *index, const char *query, results_t *results)
 {
 
 }
@@ -248,8 +316,11 @@ index_lookup(map_t *index, lookup_type_t type, const char *query)
     case LOOKUP_SUBSTR:
         index_lookup_substr(index, query, results);
     break;
-    case LOOKUP_SUBSTR_NOCASE:
-        index_lookup_substr_nocase(index, query, results);
+    case LOOKUP_SUBSTR_CASEINSENSITIVE:
+        index_lookup_substr_caseinsensitive(index, query, results);
+    break;
+    case LOOKUP_EXACT:
+        index_lookup_exact(index, query, results);
     break;
     case LOOKUP_REGEX:
         index_lookup_regex(index, query, results);

@@ -1,7 +1,7 @@
 /*
 
     arfnet2-search: Fast file indexer and search
-    Copyright (C) 2023 arf20 (Ángel Ruiz Fernandez)
+    Copyright (C) 2025 arf20 (Ángel Ruiz Fernandez)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
     main.c: Program entry point
 
 */
+
+#define _XOPEN_SOURCE 700 /* strptime() without destroying clock_gettime() */
 
 #include <sys/types.h>
 #include <sys/select.h>
@@ -41,11 +43,56 @@ static char *index_format_template = NULL;
 
 static index_t g_index = NULL;
 
+static const char *result_html_header = 
+    "<p>%ld results in %f seconds</p>\n"
+    "<div class=\"result-header\">\n"
+        "<a class=\"name\" href=\"%s\">Name %s</a><a class=\"mime\" href=\"%s\">mime-type %s</a><br>\n"
+        "<a class=\"path\" href=\"%s\">path %s</a><div class=\"attrib\">"
+            "<a class=\"size\" href=\"%s\">Size %s</a>"
+            "<a class=\"time\" href=\"%s\">Time %s</a></div><br>\n"
+    "</div>\n";
+
 static const char *result_html_template = 
     "<div class=\"result\">\n"
-        "<span class=\"name\">%s</span>""<super class=\"mime\">%s</super><br>\n"
-        "<a class=\"path\" href=\"%s\">%s</a><div class=\"attrib\"><span class=\"size\">%s</span><span class=\"time\">%s</span></div><br>\n"
+        "<span class=\"name\">%s</span><super class=\"mime\">%s</super><br>\n"
+        "<a class=\"path\" href=\"%s\">%s</a><div class=\"attrib\">"
+            "<span class=\"size\">%s</span>"
+            "<span class=\"time\">%s</span></div><br>\n"
     "</div>\n";
+
+static const char *
+generate_results_header_html(struct MHD_Connection *connection, const char *baseurl,
+    sort_type_t sort_type, int sort_order, size_t nresults, float lookup_time)
+{
+    static char buff[65535], name_url[256], mime_url[256], path_url[256],
+        size_url[256], time_url[256];
+
+    *buff = '\0';
+
+    const char *arrows[] = { "&#8593;", "&#8595;" };
+
+    char name_order = (sort_type == SORT_NAME) && sort_order ? 'a' : 'd';
+    char mime_order = (sort_type == SORT_MIME) && sort_order ? 'a' : 'd';
+    char path_order = (sort_type == SORT_PATH) && sort_order ? 'a' : 'd';
+    char size_order = (sort_type == SORT_SIZE) && sort_order ? 'a' : 'd';
+    char time_order = (sort_type == SORT_TIME) && sort_order ? 'a' : 'd';
+
+    snprintf(name_url, 256, "%s&s=n&o=%c", baseurl, name_order);
+    snprintf(mime_url, 256, "%s&s=m&o=%c", baseurl, mime_order);
+    snprintf(path_url, 256, "%s&s=p&o=%c", baseurl, path_order);
+    snprintf(size_url, 256, "%s&s=s&o=%c", baseurl, size_order);
+    snprintf(time_url, 256, "%s&s=t&o=%c", baseurl, time_order);
+
+    snprintf(buff, 65535, result_html_header, nresults, lookup_time,
+        name_url, arrows[!name_order],
+        mime_url, arrows[!mime_order],
+        path_url, arrows[!path_order],
+        size_url, arrows[!size_order],
+        time_url, arrows[!time_order]
+    );
+
+    return buff;
+}
 
 static const char *
 sizestr(size_t size)
@@ -68,13 +115,12 @@ static const char *
 generate_results_html(results_t *results)
 {
     static char buff[65535], timebuf[256], urlbuf[4096];
-
     char *pos = buff;
   
     for (int i = 0; i < results->size; i++) {
         const node_data_t *data = results->results[i];
-        struct tm *tm_mtim = gmtime(&data->stat.st_mtim.tv_sec);
-        strftime(timebuf, 256, "%Y-%m-%d %H:%M:%S", tm_mtim);
+        struct tm *tm_mtim = gmtime(&data->stat.st_mtime);
+        strftime(timebuf, 256, "%b %d %Y", tm_mtim);
 
         snprintf(urlbuf, 4096, "%s%s", subdir, data->path);
 
@@ -117,7 +163,7 @@ enum MHD_Result answer_to_connection(
     int ret;
 
     if (strcmp(method, "GET") == 0 && strcmp(url, "/") == 0) {
-        snprintf(buff, BUFF_SIZE, index_format_template, "", "");
+        snprintf(buff, BUFF_SIZE, index_format_template, "", "", "");
 
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
             MHD_RESPMEM_PERSISTENT);
@@ -127,23 +173,124 @@ enum MHD_Result answer_to_connection(
         MHD_destroy_response(response);
     }
     else if (strcmp(method, "GET") == 0 && strcmp(url, "/query") == 0) {
+        /* get query */
         const char *query = MHD_lookup_connection_value(connection,
-            MHD_GET_ARGUMENT_KIND, "query");
+            MHD_GET_ARGUMENT_KIND, "q");
+
+        /* get and parse query type */
+        lookup_type_t query_type = -1;
+        const char *query_type_str = MHD_lookup_connection_value(connection,
+            MHD_GET_ARGUMENT_KIND, "t");
+        if (!query_type_str)
+            query_type_str = "s";
+
+        if (query_type_str) {
+            switch (query_type_str[0]) {
+            case 's': query_type = LOOKUP_SUBSTR; break;
+            case 'i': query_type = LOOKUP_SUBSTR_CASEINSENSITIVE; break;
+            case 'e': query_type = LOOKUP_EXACT; break;
+            case 'r': query_type = LOOKUP_REGEX; break;
+            }
+        } else query_type = LOOKUP_SUBSTR;
+
+        /* get and parse sorting */
+        sort_type_t sort_type = SORT_NAME;
+        int sort_order = 0;
+        const char *sort_type_str = MHD_lookup_connection_value(connection,
+            MHD_GET_ARGUMENT_KIND, "s");
+        const char *sort_order_str = MHD_lookup_connection_value(connection,
+            MHD_GET_ARGUMENT_KIND, "o");
+        if (sort_type_str) {
+            switch (sort_type_str[0]) {
+            case 'n': sort_type = SORT_NAME; break;
+            case 'm': sort_type = SORT_MIME; break;
+            case 'p': sort_type = SORT_PATH; break;
+            case 's': sort_type = SORT_SIZE; break;
+            case 't': sort_type = SORT_TIME; break;
+            }
+        }
+        if (sort_order_str)
+            sort_order = sort_order_str[0] == 'd';
+
+        /* get and parse filters */
+        const char *filter_time_low = MHD_lookup_connection_value(connection,
+            MHD_GET_ARGUMENT_KIND, "ftl");
+        const char *filter_time_high = MHD_lookup_connection_value(connection,
+            MHD_GET_ARGUMENT_KIND, "fth");
+        const char *filter_size_low = MHD_lookup_connection_value(connection,
+            MHD_GET_ARGUMENT_KIND, "fsl");
+        const char *filter_size_high = MHD_lookup_connection_value(connection,
+            MHD_GET_ARGUMENT_KIND, "fsh");
+
+        filter_t filter = { 0 };
+
+        struct tm filter_tm;
+        if (strptime(filter_time_low, "%Y-%m-%d", &filter_tm))
+            filter.time_low = mktime(&filter_tm);
+        else
+            filter.time_low = 0;
+
+        if (strptime(filter_time_high, "%Y-%m-%d", &filter_tm))
+            filter.time_high = mktime(&filter_tm);
+        else
+            filter.time_high = 0;
+
+        filter.size_low = atoi(filter_size_low);
+        filter.size_high = atoi(filter_size_high);
+
+
+        /* build baseurl with query and filters (no sort) for sort links */
+        char baseurl[1024];
+        snprintf(baseurl, 1024, "/query?q=%s&t=%s&ftl=%s&fth=%s&fsl=%s&fsh=%s",
+            query,
+            query_type_str,
+            filter_time_low ? filter_time_low : "",
+            filter_time_high ? filter_time_high : "",
+            filter_size_low ? filter_size_low : "",
+            filter_size_high ? filter_size_high : ""
+        );
+
+
+        /* lookup query in index with type, mesuring time */
+        struct timespec start, finish;
+        clock_gettime(CLOCK_REALTIME, &start);
 
         results_t *results = NULL;
-        if (g_index)
-            results = index_lookup(g_index, LOOKUP_SUBSTR, query);
+        if (query && g_index)
+            results = index_lookup(g_index, query_type, query);
 
+        clock_gettime(CLOCK_REALTIME, &finish);
+
+        /* sort results */
         if (results)
+            results_sort(results, sort_type, sort_order);
+
+        /* filter results */
+        if (results)
+            results = results_filter(results, &filter);
+
+        /* generate response with header, results, and time */
+        float lookup_time = (finish.tv_sec + (0.000000001 * finish.tv_nsec)) - 
+            (start.tv_sec + (0.000000001 * start.tv_nsec));
+
+        if (query && results)
             snprintf(buff, BUFF_SIZE, index_format_template, query,
+                filter_time_low ? filter_time_low : "",
+                filter_time_high ? filter_time_high : "",
+                filter_size_low ? filter_size_low : "",
+                filter_size_high ? filter_size_high : "",
+                generate_results_header_html(connection, baseurl, sort_type,
+                    sort_order, results->size, lookup_time),
                 generate_results_html(results));
         else
-            snprintf(buff, BUFF_SIZE, index_format_template, query,
-                "indexing in progress... try again later");
+            snprintf(buff, BUFF_SIZE, index_format_template, query ? query : "",
+                "", "indexing in progress... try again later");
 
+        /* send it */
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
             MHD_RESPMEM_PERSISTENT);
 
+        /* cleanup */
         if (results)
             results_destroy(results);
 

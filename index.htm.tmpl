@@ -10,6 +10,7 @@
 }
 
 .box {
+    margin-bottom: 1em;
     width: 50%;
     min-width: 400px;
     display: block;
@@ -41,6 +42,10 @@
     width: 200px;
 }
 
+.advanced {
+    margin-left: 1em;
+}
+
 .collapse-title {
     font-weight: bold;
 }
@@ -51,6 +56,10 @@
 
 .sort-right {
     display: inline-block;
+}
+
+.result-header {
+    margin-bottom: 1em;
 }
 
 .result {
@@ -97,52 +106,44 @@
             <p>Search all of the ARFNET content fast</p>
             <form class="searchform" action="/query" method="get">
                 <div class="box form-inline">
-                    <input class="input" type="text" name="query" value="%s">
+                    <input class="input" type="text" name="q" value="%s">
                     <button type="submit">Search</button><br>
                 </div>
                 <div>
-                    <details>
+                    <details class="advanced">
                         <summary class="collapse-title">Advanced</summary>
-                        <input type="radio" id="substr" name="type" value="substr">
-                        <label for="substr">substring</label>
-                        <input type="radio" id="substr_nocase" name="type" value="substr_nocase">
-                        <label for="substr_nocase">case insensitive substring</label>
-                        <input type="radio" id="exact" name="type" value="exact">
-                        <label for="exact">exact</label>
-                        <input type="radio" id="regex" name="type" value="regex">
-                        <label for="regex">regex</label>
-                    </details>
-                    <details>
-                        <summary class="collapse-title">Filtering</summary>
+                        <p>
+                            <label class="label">Search type</label>
+                            <input type="radio" id="substr" name="t" value="s" checked="checked">
+                            <label for="substr">substring</label>
+                            <input type="radio" id="substr_nocase" name="t" value="i">
+                            <label for="substr_nocase">case insensitive substring</label>
+                            <input type="radio" id="exact" name="t" value="e">
+                            <label for="exact">exact</label>
+                            <input type="radio" id="regex" name="t" value="r">
+                            <label for="regex">regex</label>
+                        </p>
+                        <p>
                             <label class="label" for="mtime_start">Timeframe start</label>
-                            <input type="date" id="mtime_start" name="filter_mtime_start"><br>
+                            <input type="date" id="mtime_start" name="ftl" value="%s"><br>
+                        </p>
+                        <p>
                             <label class="label" for="mtime_end">Timeframe end</label>
-                            <input type="date" id="mtime_end" name="filter_mtime_end"><br>
+                            <input type="date" id="mtime_end" name="fth" value="%s"><br>
+                        </p>
+                        <p>
                             <label class="label" for="size_start">Size lower bound</label>
-                            <input type="text" id="size_start" name="filter_size_start"><br>
+                            <input type="text" id="size_start" name="fsl" value="%s"><br>
+                        </p>
+                        <p>
                             <label class="label" for="size_end">Size upper bound</label>
-                            <input type="text" id="size_end" name="filter_size_end"><br>
-                    </details>
-                    <details>
-                        <summary class="collapse-title">Sorting</summary>
-                        <div class="sort-left">
-                            <input type="radio" name="sort" id="name" value="name">
-                            <label for="name">name</label><br>
-                            <input type="radio" name="sort" id="time" value="time">
-                            <label for="time">time</label><br>
-                            <input type="radio" name="sort" id="size" value="size">
-                            <label for="size">size</label><br>
-                        </div>
-                        <div class="sort-right">
-                            <input type="radio" name="sort_dir" id="asc" value="asc">
-                            <label for="asc">ascending</label><br>
-                            <input type="radio" name="sort_dir" id="desc" value="desc">
-                            <label for="desc">descending</label><br>
-                        </div>
+                            <input type="text" id="size_end" name="fsh" value="%s"><br>
+                        </p>
                     </details>
                 </div>
             </form>
             <hr>
+            %s
             %s
         </main>
     </body>

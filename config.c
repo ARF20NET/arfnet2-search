@@ -1,7 +1,7 @@
 /*
 
     arfnet2-search: Fast file indexer and search
-    Copyright (C) 2023 arf20 (Ángel Ruiz Fernandez)
+    Copyright (C) 2025 arf20 (Ángel Ruiz Fernandez)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
