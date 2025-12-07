@@ -29,6 +29,7 @@
 
 unsigned short port = 0;
 char *tmpl_path = NULL, *root = NULL, *subdir = NULL;
+int magic_enable = 0, period = 86400;
 
 int
 config_load(const char *conf_path)
@@ -63,19 +64,33 @@ config_load(const char *conf_path)
                 fprintf(stderr, "[config] invalid port: %s\n", line);
                 return -1;
             }
-        } else if (strcmp(line, "template") == 0) {
+        }
+        else if (strcmp(line, "template") == 0) {
             value[strlen(value) - 1] = '\0';
             tmpl_path = strdup(value);
             printf("\ttemplate: %s\n", tmpl_path);
-        } else if (strcmp(line, "root") == 0) {
+        }
+        else if (strcmp(line, "root") == 0) {
             value[strlen(value) - 1] = '\0';
             root = strdup(value);
             printf("\troot: %s\n", root);
-        } else if (strcmp(line, "subdir") == 0) {
+        }
+        else if (strcmp(line, "subdir") == 0) {
             value[strlen(value) - 1] = '\0';
             subdir = strdup(value);
             printf("\tsubdir: %s\n", subdir);
-        } else {
+        }
+        else if (strcmp(line, "magic") == 0) {
+            value[strlen(value) - 1] = '\0';
+            magic_enable = (strcmp(value, "true") == 0);
+            printf("\tmagic: %d\n", magic_enable);
+        }
+        else if (strcmp(line, "period") == 0) {
+            value[strlen(value) - 1] = '\0';
+            period = atoi(value);
+            printf("\tperiod: %d\n", period);
+        }
+        else {
             fprintf(stderr, "[config] unknown key: %s\n", line);
             continue;
         }
@@ -95,6 +110,11 @@ config_load(const char *conf_path)
 
     if (!root) {
         fprintf(stderr, "[config] E: no root given\n");
+        return -1;
+    }
+
+    if (!subdir) {
+        fprintf(stderr, "[config] E: no link subdirectory given\n");
         return -1;
     }
 

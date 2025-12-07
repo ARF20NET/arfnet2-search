@@ -32,6 +32,7 @@
 /* config */
 extern unsigned short port;
 extern char *tmpl_path, *root, *subdir;
+extern int magic_enable, period;
 
 
 int config_load(const char *conf_path);

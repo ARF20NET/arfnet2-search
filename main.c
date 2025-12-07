@@ -347,27 +347,30 @@ int main() {
         return 1;
     }
 
-    /* begin indexing */
     if (index_init() < 0)
         return 1;
 
-    time_t time_now = time(NULL);
-    struct tm *tm_now = gmtime(&time_now);
-    static char timestr[256];
-    strftime(timestr, 256, "%Y-%m-%d %H:%M:%S", tm_now);
+    /* index loop */
+    do {
+        time_t time_now = time(NULL);
+        struct tm *tm_now = gmtime(&time_now);
+        static char timestr[256];
+        strftime(timestr, 256, "%Y-%m-%d %H:%M:%S", tm_now);
 
-    printf("[%s] [index] indexeding started...\n", timestr);
+        printf("[%s] [index] indexeding started...\n", timestr);
 
-    g_index = index_new(INIT_MAP_CAPACITY, root, 1);
+        if (g_index)
+            index_destroy(g_index);
 
-    time_now = time(NULL);
-    tm_now = gmtime(&time_now);
-    strftime(timestr, 256, "%Y-%m-%d %H:%M:%S", tm_now);
+        g_index = index_new(INIT_MAP_CAPACITY, root, magic_enable);
 
-    printf("[%s] [index] indexed finished\n", timestr);
+        time_now = time(NULL);
+        tm_now = gmtime(&time_now);
+        strftime(timestr, 256, "%Y-%m-%d %H:%M:%S", tm_now);
 
-    while (1) {
-        sleep(1000);
-    }
+        printf("[%s] [index] indexed finished\n", timestr);
+
+        sleep(period);
+    } while (1);
 }
 
