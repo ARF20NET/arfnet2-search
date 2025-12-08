@@ -7,7 +7,7 @@ port=8888
 template=index.htm.tmpl
 
 # app subdirectory for http server
-app_subdir=/search/
+app_subdir=/search
 
 # root
 root=/home/arf20/projects

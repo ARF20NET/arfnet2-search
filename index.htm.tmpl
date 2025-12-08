@@ -113,7 +113,7 @@
         <main>
             <h2 class="center">Search</h2>
             <p>Search all of the ARFNET content fast</p>
-            <form class="searchform" action="/query" method="get">
+            <form class="searchform" action="/search/query" method="get">
                 <div class="box form-inline">
                     <input class="input" type="text" name="q" value="%s">
                     <button type="submit">Search</button><br>
@@ -123,13 +123,13 @@
                         <summary class="collapse-title">Advanced</summary>
                         <p>
                             <label class="label">Search type</label>
-                            <input type="radio" id="substr" name="t" value="s" checked="checked">
+                            <input type="radio" id="substr" name="t" value="s" %s>
                             <label for="substr">substring</label>
-                            <input type="radio" id="substr_nocase" name="t" value="i">
+                            <input type="radio" id="substr_nocase" name="t" value="i" %s>
                             <label for="substr_nocase">case insensitive substring</label>
-                            <input type="radio" id="exact" name="t" value="e">
+                            <input type="radio" id="exact" name="t" value="e" %s>
                             <label for="exact">exact</label>
-                            <input type="radio" id="regex" name="t" value="r">
+                            <input type="radio" id="regex" name="t" value="r" %s>
                             <label for="regex">regex</label>
                         </p>
                         <p>

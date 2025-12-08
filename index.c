@@ -301,7 +301,7 @@ index_lookup_substr_caseinsensitive(map_t *index, const char *query,
             if (strcasestr(node->data->name, query))
                 results_insert(results, node->data);
             if (node->child)
-                index_lookup_substr(node->child, query, results);
+                index_lookup_substr_caseinsensitive(node->child, query, results);
         }
     }
 }
@@ -317,7 +317,7 @@ index_lookup_exact(map_t *index, const char *query, results_t *results)
             if (strcmp(node->data->name, query) == 0)
                 results_insert(results, node->data);
             if (node->child)
-                index_lookup_substr(node->child, query, results);
+                index_lookup_exact(node->child, query, results);
         }
     }
 }
@@ -347,7 +347,6 @@ index_lookup(map_t *index, lookup_type_t type, const char *query)
     case LOOKUP_REGEX:
         index_lookup_regex(index, query, results);
     break;
-
     }
 
     return results;

@@ -123,6 +123,8 @@ generate_results_html(results_t *results)
     
     char *buff = malloc(1024 * results->size); /* alloc 1K per result */
     char *pos = buff;
+
+    *pos = '\0';
   
     for (int i = 0; i < results->size; i++) {
         const node_data_t *data = results->results[i];
@@ -159,8 +161,6 @@ enum MHD_Result answer_to_connection(
     size_t *upload_data_size,
     void **ptr
 ) {
-    char buff[BUFF_SIZE];
-
     const struct sockaddr_in **coninfo =
         (const struct sockaddr_in**)MHD_get_connection_info(
             connection, MHD_CONNECTION_INFO_CLIENT_ADDRESS);
@@ -177,11 +177,12 @@ enum MHD_Result answer_to_connection(
     int ret;
 
     if (strcmp(method, "GET") == 0 && strcmp(url, subdir_endpoint("/")) == 0) {
-        snprintf(buff, BUFF_SIZE, index_format_template, "", "", "", "", "", "",
-            "");
+        char resp_buff[4096];
+        snprintf(resp_buff, 16384, index_format_template, "",
+            "checked=\"checked\"", "", "", "", "", "", "", "", "", "");
 
-        response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
-            MHD_RESPMEM_PERSISTENT);
+        response = MHD_create_response_from_buffer(strlen(resp_buff),
+            (void*)resp_buff, MHD_RESPMEM_PERSISTENT);
 
         MHD_add_response_header(response, "Content-Type", "text/html");
 
@@ -293,10 +294,19 @@ enum MHD_Result answer_to_connection(
         float lookup_time = (finish.tv_sec + (0.000000001 * finish.tv_nsec)) - 
             (start.tv_sec + (0.000000001 * start.tv_nsec));
 
-        char *results_html = NULL;
+        char *results_html = NULL, *resp_buff = NULL;
+        size_t resp_buff_size = 0;
         if (query && results) {
             results_html = generate_results_html(results);
-            snprintf(buff, BUFF_SIZE, index_format_template, query,
+            resp_buff_size = strlen(results_html) + 16384;
+            resp_buff = malloc(resp_buff_size);
+            resp_buff_size = snprintf(resp_buff, resp_buff_size,
+                index_format_template,
+                query,
+                query_type == LOOKUP_SUBSTR ? "checked=\"checked\"" : "",
+                query_type == LOOKUP_SUBSTR_CASEINSENSITIVE ? "checked=\"checked\"" : "",
+                query_type == LOOKUP_EXACT ? "checked=\"checked\"" : "",
+                query_type == LOOKUP_REGEX ? "checked=\"checked\"" : "",
                 filter_time_low ? filter_time_low : "",
                 filter_time_high ? filter_time_high : "",
                 filter_size_low ? filter_size_low : "",
@@ -305,13 +315,17 @@ enum MHD_Result answer_to_connection(
                     sort_order, results->size, lookup_time),
                 results_html);
         }
-        else
-            snprintf(buff, BUFF_SIZE, index_format_template, "", "",
-                "", "", "", "", "indexing in progress... try again later");
+        else {
+            resp_buff_size = 16384;
+            resp_buff = malloc(resp_buff_size);
+            resp_buff_size = snprintf(resp_buff, 16384, index_format_template,
+                "checked=\"checked\"", "", "", "", "", "", "", "", "", "",
+                "indexing in progress... try again later");
+        }
 
         /* send it */
-        response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
-            MHD_RESPMEM_PERSISTENT);
+        response = MHD_create_response_from_buffer(resp_buff_size,
+            (void*)resp_buff, MHD_RESPMEM_PERSISTENT);
         
         MHD_add_response_header(response, "Content-Type", "text/html");
 
@@ -323,6 +337,7 @@ enum MHD_Result answer_to_connection(
         ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
         MHD_destroy_response(response);
         free(results_html);
+        free(resp_buff);
     }
     else {
         response = MHD_create_response_from_buffer(0, (void*)NULL, 0);
