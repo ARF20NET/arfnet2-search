@@ -262,6 +262,8 @@ index_recurse(size_t size, const char *dir, int examine, size_t rootlen)
         map_insert(map, de->d_name, data, child);
     }
 
+    closedir(dirp);
+
     return map;
 }
 
@@ -291,13 +293,33 @@ void
 index_lookup_substr_caseinsensitive(map_t *index, const char *query,
     results_t *results)
 {
+    for (size_t i = 0; i < index->size; i++) {
+        if (!index->map[i].data)
+            continue;
 
+        for (struct node_s *node = &index->map[i]; node; node = node->next) {
+            if (strcasestr(node->data->name, query))
+                results_insert(results, node->data);
+            if (node->child)
+                index_lookup_substr(node->child, query, results);
+        }
+    }
 }
 
 void
 index_lookup_exact(map_t *index, const char *query, results_t *results)
 {
+    for (size_t i = 0; i < index->size; i++) {
+        if (!index->map[i].data)
+            continue;
 
+        for (struct node_s *node = &index->map[i]; node; node = node->next) {
+            if (strcmp(node->data->name, query) == 0)
+                results_insert(results, node->data);
+            if (node->child)
+                index_lookup_substr(node->child, query, results);
+        }
+    }
 }
 
 void

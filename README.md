@@ -6,19 +6,16 @@ ARFNET Fast file index and search
 
  - C webapp
  - libmicrohttpd
- - POSIX regex
 
 ## Features
 
  - All cached indexed in memory
- - Landing page w roots and searchbox
- - File directory tree browsing
-    - Metadata (mime type, size)
-    - Icons
-    - Sorting
+ - Searchbox
+ - Periodic reindexing and inotify
  - Searching
     - Advanced name substring, exact, regex
     - Sorting
+    - Filtering
 
 ## Building
 
@@ -27,4 +24,14 @@ Depends on libmicrohttpd, libmagic
 ```
 make
 ```
+
+## TODO
+
+ - [ ] Regex query
+ - [ ] inotify
+
+## Bugs
+
+ - [ ] Query type not saved on submit
+ - [ ] Long output gets cut after ~300 results
 

@@ -116,10 +116,12 @@ sizestr(size_t size)
     return buf;
 }
 
-static const char *
+static char *
 generate_results_html(results_t *results)
 {
-    static char buff[65535], timebuf[256], urlbuf[4096];
+    static char timebuf[256], urlbuf[4096];
+    
+    char *buff = malloc(1024 * results->size); /* alloc 1K per result */
     char *pos = buff;
   
     for (int i = 0; i < results->size; i++) {
@@ -129,7 +131,7 @@ generate_results_html(results_t *results)
 
         snprintf(urlbuf, 4096, "%s%s", subdir, data->path);
 
-        pos += snprintf(pos, 65535 - (pos - buff),
+        pos += snprintf(pos, 1024,
             result_html_template,
             data->name,
             data->mime ? data->mime : "",
@@ -279,7 +281,9 @@ enum MHD_Result answer_to_connection(
         float lookup_time = (finish.tv_sec + (0.000000001 * finish.tv_nsec)) - 
             (start.tv_sec + (0.000000001 * start.tv_nsec));
 
-        if (query && results)
+        char *results_html = NULL;
+        if (query && results) {
+            results_html = generate_results_html(results);
             snprintf(buff, BUFF_SIZE, index_format_template, query,
                 filter_time_low ? filter_time_low : "",
                 filter_time_high ? filter_time_high : "",
@@ -287,7 +291,8 @@ enum MHD_Result answer_to_connection(
                 filter_size_high ? filter_size_high : "",
                 generate_results_header_html(connection, baseurl, sort_type,
                     sort_order, results->size, lookup_time),
-                generate_results_html(results));
+                results_html);
+        }
         else
             snprintf(buff, BUFF_SIZE, index_format_template, "", "",
                 "", "", "", "", "indexing in progress... try again later");
@@ -303,6 +308,7 @@ enum MHD_Result answer_to_connection(
         printf("%d\n", 200);
         ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
         MHD_destroy_response(response);
+        free(results_html);
     }
     else {
         response = MHD_create_response_from_buffer(0, (void*)NULL, 0);
@@ -352,8 +358,8 @@ int main() {
 
     /* index loop */
     do {
-        time_t time_now = time(NULL);
-        struct tm *tm_now = gmtime(&time_now);
+        time_t time_start = time(NULL);
+        struct tm *tm_now = gmtime(&time_start);
         static char timestr[256];
         strftime(timestr, 256, "%Y-%m-%d %H:%M:%S", tm_now);
 
@@ -364,11 +370,12 @@ int main() {
 
         g_index = index_new(INIT_MAP_CAPACITY, root, magic_enable);
 
-        time_now = time(NULL);
-        tm_now = gmtime(&time_now);
+        time_t time_stop = time(NULL);
+        tm_now = gmtime(&time_stop);
         strftime(timestr, 256, "%Y-%m-%d %H:%M:%S", tm_now);
 
-        printf("[%s] [index] indexed finished\n", timestr);
+        printf("[%s] [index] indexed finished (%ld s)\n", timestr,
+            time_stop - time_start);
 
         sleep(period);
     } while (1);
