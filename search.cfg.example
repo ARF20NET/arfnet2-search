@@ -6,4 +6,18 @@ port=8888
 # html template path
 template=index.htm.tmpl
 
+# app subdirectory for http server
+app_subdir=/search/
+
+# root
+root=/home/arf20/projects
+
+# read magic numbers (mime type)
+magic=false
+
+# indexing period (seconds)
+period=86400
+
+# http subdirectory for file links
+result_subdir=/files/
 

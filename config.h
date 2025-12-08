@@ -31,7 +31,7 @@
 
 /* config */
 extern unsigned short port;
-extern char *tmpl_path, *root, *subdir;
+extern char *tmpl_path, *root, *app_subdir, *result_subdir;
 extern int magic_enable, period;
 
 

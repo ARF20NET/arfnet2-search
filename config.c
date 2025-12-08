@@ -28,7 +28,8 @@
 #include <errno.h>
 
 unsigned short port = 0;
-char *tmpl_path = NULL, *root = NULL, *subdir = NULL;
+char *tmpl_path = NULL, *root = NULL, *app_subdir = NULL,
+    *result_subdir = NULL;
 int magic_enable = 0, period = 86400;
 
 int
@@ -75,10 +76,15 @@ config_load(const char *conf_path)
             root = strdup(value);
             printf("\troot: %s\n", root);
         }
-        else if (strcmp(line, "subdir") == 0) {
+        else if (strcmp(line, "app_subdir") == 0) {
             value[strlen(value) - 1] = '\0';
-            subdir = strdup(value);
-            printf("\tsubdir: %s\n", subdir);
+            app_subdir = strdup(value);
+            printf("\tapp_subdir: %s\n", app_subdir);
+        }
+        else if (strcmp(line, "result_subdir") == 0) {
+            value[strlen(value) - 1] = '\0';
+            result_subdir = strdup(value);
+            printf("\tresult_subdir: %s\n", result_subdir);
         }
         else if (strcmp(line, "magic") == 0) {
             value[strlen(value) - 1] = '\0';
@@ -113,8 +119,13 @@ config_load(const char *conf_path)
         return -1;
     }
 
-    if (!subdir) {
-        fprintf(stderr, "[config] E: no link subdirectory given\n");
+    if (!app_subdir) {
+        fprintf(stderr, "[config] E: no application subdirectory given\n");
+        return -1;
+    }
+
+    if (!result_subdir) {
+        fprintf(stderr, "[config] E: no result link subdirectory given\n");
         return -1;
     }
 

@@ -129,7 +129,7 @@ generate_results_html(results_t *results)
         struct tm *tm_mtim = gmtime(&data->stat.st_mtime);
         strftime(timebuf, 256, "%b %d %Y", tm_mtim);
 
-        snprintf(urlbuf, 4096, "%s%s", subdir, data->path);
+        snprintf(urlbuf, 4096, "%s%s", result_subdir, data->path);
 
         pos += snprintf(pos, 1024,
             result_html_template,
@@ -141,6 +141,13 @@ generate_results_html(results_t *results)
     }
 
     return buff;
+}
+
+const char *
+subdir_endpoint(const char *endpoint) {
+    static char subdir_endpoint[256];
+    snprintf(subdir_endpoint, 256, "%s%s", app_subdir, endpoint);
+    return subdir_endpoint;
 }
 
 enum MHD_Result answer_to_connection(
@@ -169,7 +176,7 @@ enum MHD_Result answer_to_connection(
     struct MHD_Response *response;
     int ret;
 
-    if (strcmp(method, "GET") == 0 && strcmp(url, "/") == 0) {
+    if (strcmp(method, "GET") == 0 && strcmp(url, subdir_endpoint("/")) == 0) {
         snprintf(buff, BUFF_SIZE, index_format_template, "", "", "", "", "", "",
             "");
 
@@ -180,7 +187,9 @@ enum MHD_Result answer_to_connection(
         ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
         MHD_destroy_response(response);
     }
-    else if (strcmp(method, "GET") == 0 && strcmp(url, "/query") == 0) {
+    else if (strcmp(method, "GET") == 0 && strcmp(url,
+        subdir_endpoint("/query")) == 0)
+    {
         /* get query */
         const char *query = MHD_lookup_connection_value(connection,
             MHD_GET_ARGUMENT_KIND, "q");
