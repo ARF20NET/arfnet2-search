@@ -260,7 +260,8 @@ enum MHD_Result answer_to_connection(
 
         /* build baseurl with query and filters (no sort) for sort links */
         char baseurl[1024];
-        snprintf(baseurl, 1024, "/query?q=%s&t=%s&ftl=%s&fth=%s&fsl=%s&fsh=%s",
+        snprintf(baseurl, 1024, "%s/query?q=%s&t=%s&ftl=%s&fth=%s&fsl=%s&fsh=%s",
+            app_subdir,
             query,
             query_type_str,
             filter_time_low ? filter_time_low : "",
