@@ -183,6 +183,8 @@ enum MHD_Result answer_to_connection(
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
             MHD_RESPMEM_PERSISTENT);
 
+        MHD_add_response_header(response, "Content-Type", "text/html");
+
         printf("%d\n", 200);
         ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
         MHD_destroy_response(response);
@@ -309,6 +311,8 @@ enum MHD_Result answer_to_connection(
         /* send it */
         response = MHD_create_response_from_buffer(strlen(buff), (void*)buff,
             MHD_RESPMEM_PERSISTENT);
+        
+        MHD_add_response_header(response, "Content-Type", "text/html");
 
         /* cleanup */
         if (results)
